@@ -5,8 +5,8 @@ import cv2
 # q to quit, n to go to the next image, p to go to the previous image, s to save the current annotation, c to clear the current annotation
 
 project_dir = Path(__file__).parent
-dataset_dir = project_dir / "cats_dogs_light"
-output_dir = project_dir / "nose_annotations"
+dataset_dir = project_dir / "data" / "validation"
+output_dir = project_dir / "nose_annotations" / "validation"
 
 image_extensions = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
 image_paths = sorted(
@@ -21,7 +21,7 @@ if not image_paths:
 current_index = 0
 image = None
 annotated = None
-brush_radius = 3
+brush_radius = 2
 brush_color = (0, 0, 255)
 window_name = "Nose Annotator"
 
