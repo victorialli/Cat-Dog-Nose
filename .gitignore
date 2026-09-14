@@ -1,1 +1,4 @@
-cats_dogs_light.zip
+cats_dogs_light
+.venv/
+nose_annotations/
+__pycache__/
