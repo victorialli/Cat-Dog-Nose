@@ -1,3 +1,4 @@
+
 import torch
 from torch.utils.data import DataLoader, Dataset
 import segmentation_models_pytorch as smp
@@ -52,6 +53,8 @@ class NoseDataset(Dataset):
 
         return image_tensor, mask_tensor
 
+train_dataset = NoseDataset(image_dir, mask_dir, annotation_color)
+train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 
 #loss function
 criterion = smp.losses.TverskyLoss(
@@ -70,7 +73,7 @@ model.train()
 for epoch in range(epochs):
     epoch_loss = 0.0 #set model to training mode
 
-    for images, annotations in train_loader:
+    for images, masks in train_loader:
         #Step A: Reset gradients
         images = images.float()
         masks = masks.float()
