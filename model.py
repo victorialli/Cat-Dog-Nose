@@ -1,6 +1,7 @@
 import torch
-from trouch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader, Dataset
 import segmentation_models_pytorch as smp
+import torch.optim as optim
 
 model = smp.Unet(
     encoder_name="resnet18",        
@@ -12,9 +13,9 @@ model = smp.Unet(
 image_dir = "data/train"
 mask_dir = "nose_annotations/train"
 
-batch_size = 0
-learning_rate = 0
-epochs = 0
+batch_size = 8
+learning_rate = 0.001
+epochs = 20
 
 #pth to data
 class NoseDataset(Dataset):
@@ -44,27 +45,53 @@ class NoseDataset(Dataset):
 
 
 #loss function
-criterion =
-optimizer = 
+criterion = smp.losses.TverskyLoss(
+    mode="binary",
+    from_logits=True,
+    alpha=0.3,
+    beta=0.7
+)
 
+optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
 #main training loop
 
 model.train()
 
 for epoch in range(epochs):
-    epoch_loss = 0 #set model to training mode
+    epoch_loss = 0.0 #set model to training mode
 
     for images, annotations in train_loader:
         #Step A: Reset gradients
+        images = images.float()
+        masks = masks.float()
+
         optimizer.zero_grad()
 
         #Step B: Forward pass (model makes its predictions)
         outputs = model(images)
 
+        if outputs.shape[-2:] != masks.shape[-2:]:
+            masks = torch.nn.functional.interpolate(
+                masks,
+                size = outputs.shape[-2:],
+                mode = "nearest"
+            )
+
         #Step C: Calculate error (compare predictions to your binary masks)
         loss = criterion(outputs, masks)
 
         #Step D: Backward pass (calculate updates/gradients)
-        loss.backwards()
+        loss.backward()
+
+
         #Step E: Update model weights
+        optimizer.step()
+
+        epoch_loss += loss.item()
+
+    average_loss = epoch_loss / len(train_loader)
+    print(f"Epoch [{epoch + 1}/{epochs}], loss: {average_loss:.4f}")
+
+
+
