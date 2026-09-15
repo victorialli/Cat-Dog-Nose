@@ -6,6 +6,7 @@ import torch.optim as optim
 import numpy as np
 from pathlib import Path
 from PIL import Image
+from torch.utils.tensorboard import SummaryWriter
 
 model = smp.Unet(
     encoder_name="resnet18",        
@@ -73,6 +74,8 @@ optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
 model.train()
 
+writer = SummaryWriter("runs/nose_experiment")
+
 for epoch in range(epochs):
     epoch_loss = 0.0 #set model to training mode
 
@@ -106,7 +109,8 @@ for epoch in range(epochs):
         epoch_loss += loss.item()
 
     average_loss = epoch_loss / len(train_loader)
-    print(f"Epoch [{epoch + 1}/{epochs}], loss: {average_loss:.4f}")
+    writer.add_scalar("Loss/Overall", overall_loss, epoch) # (or batch index)
+   # print(f"Epoch [{epoch + 1}/{epochs}], loss: {average_loss:.4f}")
 
 torch.save(model.state_dict(), "nose_unet.pt")
 
