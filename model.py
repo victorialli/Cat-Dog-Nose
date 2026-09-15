@@ -6,6 +6,7 @@ from torch.utils.data import DataLoader, Dataset
 import segmentation_models_pytorch as smp
 import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
+import albumentations as A  # <-- 1. Import Albumentations
 
 # --- 1. Setup Device ---
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -27,11 +28,20 @@ val_mask_dir = "nose_annotations/validation"
 annotation_color = (255, 0, 0)  # RGB color for the nose annotation
 
 
-# --- 3. Dataset Class (Returns Filename for Tracking) ---
+# --- 3. Define Augmentations (Training Only) ---
+train_transform = A.Compose([
+    A.Rotate(limit=15, p=0.5),  # Rotates between -15 and 15 degrees 50% of the time
+    # You can easily add more transforms here later, e.g.:
+    # A.HorizontalFlip(p=0.5),
+])
+
+
+# --- 4. Dataset Class (Updated to support transforms) ---
 class NoseDataset(Dataset):
-    def __init__(self, image_dir, mask_dir, annotation_color):
+    def __init__(self, image_dir, mask_dir, annotation_color, transform=None):
         self.image_dir, self.mask_dir = Path(image_dir), Path(mask_dir)
         self.annotation_color = annotation_color
+        self.transform = transform
         
         self.samples = [
             p for p in sorted(self.image_dir.glob("*.jpg")) 
@@ -46,25 +56,36 @@ class NoseDataset(Dataset):
         img_path = self.samples[idx]
         mask_path = self.mask_dir / f"{img_path.stem}.png"
 
-        image = np.array(Image.open(img_path).convert("RGB"), dtype=np.float32) / 255.0
-        mask = (np.array(Image.open(mask_path).convert("RGB")) == self.annotation_color).all(axis=-1).astype(np.float32)
+        # Load as raw numpy arrays (uint8 format [0, 255] is best for Albumentations)
+        image = np.array(Image.open(img_path).convert("RGB"))
+        mask = (np.array(Image.open(mask_path).convert("RGB")) == self.annotation_color).all(axis=-1).astype(np.uint8)
 
+        # Apply augmentations if a transform is provided (Training set only)
+        if self.transform:
+            augmented = self.transform(image=image, mask=mask)
+            image = augmented["image"]
+            mask = augmented["mask"]
+
+        # Normalize image to [0.0, 1.0] float32 after augmentation
+        image = image.astype(np.float32) / 255.0
+        mask = mask.astype(np.float32)
+
+        # Convert to PyTorch tensors
         image_tensor = torch.tensor(image).permute(2, 0, 1)
         mask_tensor = torch.tensor(mask).unsqueeze(0)
 
-        # Return filename string so we know if it's a cat or a dog
         return image_tensor, mask_tensor, img_path.name
 
 
-# Initialize Single Shuffled Train Loader & Single Validation Loader
-train_dataset = NoseDataset(train_image_dir, train_mask_dir, annotation_color)
+# Initialize Datasets and Loaders (Pass train_transform ONLY to the training dataset)
+train_dataset = NoseDataset(train_image_dir, train_mask_dir, annotation_color, transform=train_transform)
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 
-val_dataset = NoseDataset(val_image_dir, val_mask_dir, annotation_color)
+val_dataset = NoseDataset(val_image_dir, val_mask_dir, annotation_color, transform=None) # No augmentation for validation
 val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 
 
-# --- 4. Model, Loss, Optimizer ---
+# --- 5. Model, Loss, Optimizer ---
 model = smp.Unet(
     encoder_name="resnet18",        
     encoder_weights="imagenet",     
@@ -83,7 +104,7 @@ optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 writer = SummaryWriter("runs/nose_experiment")
 
 
-# --- 5. Main Training & Validation Loop ---
+# --- 6. Main Training & Validation Loop ---
 for epoch in range(epochs):
     
     # ------------------------------------------
@@ -182,7 +203,6 @@ for epoch in range(epochs):
     avg_val_dog = val_dog_loss_sum / max(1, val_dog_count) if val_dog_count > 0 else 0.0
 
     # --- Logging to TensorBoard ---
-    # 1. Separate individual graphs
     writer.add_scalar("Loss/Train", avg_train, epoch)
     writer.add_scalar("Loss/Train_Cat", avg_train_cat, epoch)
     writer.add_scalar("Loss/Train_Dog", avg_train_dog, epoch)
@@ -191,7 +211,6 @@ for epoch in range(epochs):
     writer.add_scalar("Loss/Val_Cat", avg_val_cat, epoch)
     writer.add_scalar("Loss/Val_Dog", avg_val_dog, epoch)
 
-    # 2. Overlaid combined graph for Train vs. Val
     writer.add_scalars("Loss/Train_vs_Val", {
         "Train": avg_train,
         "Val": avg_val
