@@ -13,20 +13,17 @@ print(f"Using device: {device}")
 if device.type == "cuda":
     print(f"GPU: {torch.cuda.get_device_name(0)}")
 
-
-model = smp.Unet(
-    encoder_name="resnet18",        
-    encoder_weights="imagenet",     # use `imagenet` pre-trained weights for encoder initialization
-    in_channels=3,                  # model input channels (1 for gray-scale images, 3 for RGB, etc.)
-    classes=1,                      # model output channels (number of classes in your dataset)
-).to(device)
-
+# --- 2. Hyperparameters & Directories ---
 batch_size = 16
 learning_rate = 0.0001
 epochs = 60
 
-image_dir = "data/train2/higher_contrast"
-mask_dir = "nose_annotations/train2"
+train_image_dir = "data/train2"
+train_mask_dir = "nose_annotations/train2"
+
+val_image_dir = "data/validation"            
+val_mask_dir = "nose_annotations/validation"  
+
 annotation_color = (255, 0, 0)  # RGB color for the nose annotation
 
 
@@ -99,8 +96,6 @@ for epoch in range(epochs):
         masks = masks.float().to(device)
 
         optimizer.zero_grad()
-
-        #Step B: Forward pass (model makes its predictions)image_dir = "data/test"
         outputs = model(images)
 
         if outputs.shape[-2:] != masks.shape[-2:]:
@@ -114,9 +109,7 @@ for epoch in range(epochs):
 
         train_loss += loss.item()
 
-    average_loss = epoch_loss / len(train_loader)
-    writer.add_scalar("Loss/Overall", average_loss, epoch) # (or batch index)
-   # print(f"Epoch [{epoch + 1}/{epochs}], loss: {average_loss:.4f}")
+    average_train_loss = train_loss / len(train_loader)
 
     # ------------------------------------------
     # VALIDATION PHASE (Weights will NOT change)
