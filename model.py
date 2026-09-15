@@ -8,12 +8,19 @@ from pathlib import Path
 from PIL import Image
 from torch.utils.tensorboard import SummaryWriter
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+print(f"Using device: {device}")
+if device.type == "cuda":
+    print(f"GPU: {torch.cuda.get_device_name(0)}")
+
+
 model = smp.Unet(
     encoder_name="resnet18",        
     encoder_weights="imagenet",     # use `imagenet` pre-trained weights for encoder initialization
     in_channels=3,                  # model input channels (1 for gray-scale images, 3 for RGB, etc.)
     classes=1,                      # model output channels (number of classes in your dataset)
-)
+).to(device)
 
 batch_size = 8
 learning_rate = 0.0001
@@ -81,8 +88,8 @@ for epoch in range(epochs):
 
     for images, masks in train_loader:
         #Step A: Reset gradients
-        images = images.float()
-        masks = masks.float()
+        images = images.float().to(device)
+        masks = masks.float().to(device)
 
         optimizer.zero_grad()
 
