@@ -22,10 +22,10 @@ print("Model loaded successfully from nose_unet.pt!")
 
 # --- 2. Configuration & Validation Data ---
 batch_size = 8
-image_dir = "data/validation"
-mask_dir = "nose_annotations/validation"
+image_dir = "data/test"
+mask_dir = "nose_annotations/test"
 annotation_color = (255, 0, 0)  # RGB color for the nose annotation
-
+torch.save(model.state_dict(), "nose_unet.pt")
 class NoseDataset(Dataset):
     def __init__(self, image_dir, mask_dir, annotation_color):
         self.image_dir, self.mask_dir = Path(image_dir), Path(mask_dir)

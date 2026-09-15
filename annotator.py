@@ -28,7 +28,7 @@ window_name = "Nose Annotator"
 
 def output_path_for(source_path):
     relative_path = source_path.relative_to(dataset_dir)
-    return output_dir / relative_path
+    return (output_dir / relative_path).with_suffix(".png")
 
 
 def load_image(index):
