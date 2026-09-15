@@ -4,8 +4,8 @@ from torch.utils.data import DataLoader, Dataset
 import segmentation_models_pytorch as smp
 import torch.optim as optim
 import numpy as np
-import Path
-import PIL import Image
+from pathlib import Path
+from PIL import Image
 
 model = smp.Unet(
     encoder_name="resnet18",        
