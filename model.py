@@ -15,8 +15,8 @@ model = smp.Unet(
 )
 
 batch_size = 8
-learning_rate = 0.001
-epochs = 20
+learning_rate = 0.0001
+epochs = 30
 
 image_dir = "data/train"
 mask_dir = "nose_annotations/train"
@@ -63,8 +63,8 @@ train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 criterion = smp.losses.TverskyLoss(
     mode="binary",
     from_logits=True,
-    alpha=0.3,
-    beta=0.7
+    alpha=0.5,
+    beta=0.5
 )
 
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
