@@ -108,5 +108,5 @@ for epoch in range(epochs):
     average_loss = epoch_loss / len(train_loader)
     print(f"Epoch [{epoch + 1}/{epochs}], loss: {average_loss:.4f}")
 
-
+torch.save(model.state_dict(), "nose_unet.pt")
 
