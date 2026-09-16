@@ -16,7 +16,7 @@ mean = torch.tensor([0.485, 0.456, 0.406]).view(1, 3, 1, 1).to(device)
 std = torch.tensor([0.229, 0.224, 0.225]).view(1, 3, 1, 1).to(device)
 
 # --- 2. Video Paths & Setup ---
-video_path = "path_to_your_video.mp4"
+video_path = "data/videos/A608E00C-691E-48DD-BB0D-840DB8BEF36F.mp4"
 output_video_path = "output_nose_video.mp4"
 
 cap = cv2.VideoCapture(video_path)
